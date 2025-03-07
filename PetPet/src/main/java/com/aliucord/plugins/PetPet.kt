@@ -10,8 +10,6 @@
 package com.aliucord.plugins
 
 import android.content.Context
-import android.net.Uri
-import com.aliucord.Http
 import com.aliucord.Main
 import com.aliucord.Utils.createCommandOption
 import com.aliucord.annotations.AliucordPlugin
@@ -20,8 +18,6 @@ import com.aliucord.entities.CommandContext
 import com.aliucord.entities.Plugin
 import com.discord.api.commands.ApplicationCommandType
 import com.discord.utilities.icon.IconUtils
-import java.io.File
-import java.io.FileOutputStream
 
 @AliucordPlugin
 class PetPet : Plugin() {
@@ -43,25 +39,11 @@ class PetPet : Plugin() {
         ) { ctx: CommandContext ->
             val user = ctx.getRequiredUser("name")
             val avatar = IconUtils.getForUser(user)
-            var file: File? = null
-            try {
-                file = imageToDataUri(avatar, context)
-            } catch (e: Throwable) {
-                Main.logger.error(e)
-            }
-            assert(file != null)
-            ctx.addAttachment(Uri.fromFile(file).toString(), "petpet.gif")
-            CommandResult("")
-        }
-    }
+            val imageUrl = url + avatar.replace("webp", "png")
 
-    @Throws(Throwable::class)
-    private fun imageToDataUri(avatar: String, mContext: Context): File {
-        val res = Http.Request(url + avatar.replace("webp", "png")).execute()
-        val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
-        FileOutputStream(f).use { fos -> res.pipe(fos) }
-        f.deleteOnExit()
-        return f
+            ctx.result(imageUrl) // Simply return the URL
+            CommandResult()
+        }
     }
 
     override fun stop(context: Context) {
