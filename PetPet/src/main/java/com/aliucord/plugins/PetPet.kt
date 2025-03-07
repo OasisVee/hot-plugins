@@ -41,7 +41,7 @@ class PetPet : Plugin() {
             val avatar = IconUtils.getForUser(user)
             val imageUrl = url + avatar.replace("webp", "png")
 
-            ctx.result(imageUrl) // Simply return the URL
+            ctx.reply(imageUrl) // Send the URL as a message
             CommandResult()
         }
     }
