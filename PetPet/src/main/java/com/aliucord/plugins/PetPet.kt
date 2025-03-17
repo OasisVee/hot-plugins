@@ -59,15 +59,9 @@ class PetPet : Plugin() {
         }
     }
 
-    @Throws(Exception::class)
     private fun imageToDataUri(avatar: String, mContext: Context): File? {
         try {
             val res = Http.Request(url + avatar.replace("webp", "png")).execute()
-            
-            if (res.statusCode != 200) {
-                Main.logger.error("API request failed with status code: ${res.statusCode}")
-                return null
-            }
             
             val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
             FileOutputStream(f).use { fos -> res.pipe(fos) }
@@ -84,7 +78,6 @@ class PetPet : Plugin() {
     }
 
     companion object {
-        // The original API is down, you might want to use an alternative service
         private const val url = "https://api.obamabot.me/v1/image/petpet?avatar="
     }
 }
