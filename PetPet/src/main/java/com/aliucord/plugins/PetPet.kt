@@ -52,21 +52,19 @@ class PetPet : Plugin() {
                 } else {
                     return@registerCommand CommandResult("Failed to generate petpet image")
                 }
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
                 Main.logger.error(e)
                 return@registerCommand CommandResult("Error: ${e.message ?: "Unknown error occurred"}")
             }
         }
     }
 
-    @Throws(Throwable::class)
+    @Throws(Exception::class)
     private fun imageToDataUri(avatar: String, mContext: Context): File? {
         try {
-            val res = Http.Request(url + avatar.replace("webp", "png"))
-                .connect()
-                .execute()
+            val res = Http.Request(url + avatar.replace("webp", "png")).execute()
             
-            if (!res.ok()) {
+            if (res.statusCode != 200) {
                 Main.logger.error("API request failed with status code: ${res.statusCode}")
                 return null
             }
@@ -75,9 +73,6 @@ class PetPet : Plugin() {
             FileOutputStream(f).use { fos -> res.pipe(fos) }
             f.deleteOnExit()
             return f
-        } catch (e: Http.HttpException) {
-            Main.logger.error("HTTP Exception: ${e.message}")
-            throw e
         } catch (e: Exception) {
             Main.logger.error("Exception while fetching image: ${e.message}")
             return null
@@ -91,8 +86,5 @@ class PetPet : Plugin() {
     companion object {
         // The original API is down, you might want to use an alternative service
         private const val url = "https://api.obamabot.me/v1/image/petpet?avatar="
-        
-        // Fallback URL if you want to try an alternative service
-        // private const val url = "https://some-alternative-petpet-api.com/generate?avatar="
     }
 }
