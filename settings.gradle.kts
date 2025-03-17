@@ -1,7 +1,7 @@
 include(":clapclap")
-include(":Zoo")
+// include(":Zoo")
 include(":PetPet")
-include(":Osu")
+// include(":Osu")
 // include(":ObamaAPI")
 // include(":ReplaceTimestamps")
 
