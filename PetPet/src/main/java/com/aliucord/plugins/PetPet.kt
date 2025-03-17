@@ -60,16 +60,18 @@ class PetPet : Plugin() {
     }
 
     private fun imageToDataUri(avatar: String, mContext: Context): File? {
-        try {
-            val res = Http.Request(url + avatar.replace("webp", "png")).execute()
+        return try {
+            // Try an alternative API since the original appears to be down (error 521)
+            val alternativeUrl = "https://nekos.best/api/v2/pat?url="
+            val res = Http.Request(alternativeUrl + avatar.replace("webp", "png")).execute()
             
             val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
             FileOutputStream(f).use { fos -> res.pipe(fos) }
             f.deleteOnExit()
-            return f
+            f
         } catch (e: Exception) {
             Main.logger.error("Exception while fetching image: ${e.message}")
-            return null
+            null
         }
     }
 
