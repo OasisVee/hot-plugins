@@ -64,7 +64,7 @@ class PetPet : Plugin() {
         var file: File? = null
         
         try {
-            val res = Http.Request(alternativeUrl + avatar.replace("webp", "png")).execute()
+            val res = Http.Request(alternativeUrl + avatar.replace("webp", "png")).execute(null)
             file = File.createTempFile("temp", ".gif", mContext.cacheDir)
             FileOutputStream(file).use { fos -> res.pipe(fos) }
             file.deleteOnExit()
