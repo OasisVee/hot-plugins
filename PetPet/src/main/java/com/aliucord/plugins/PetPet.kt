@@ -20,6 +20,7 @@ import com.aliucord.entities.CommandContext
 import com.aliucord.entities.Plugin
 import com.discord.api.commands.ApplicationCommandType
 import com.discord.utilities.icon.IconUtils
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 
@@ -58,16 +59,20 @@ class PetPet : Plugin() {
     @Throws(Throwable::class)
     private fun imageToDataUri(avatar: String, mContext: Context): File {
         // Update to use v2 API and change from "avatar" to "image" parameter
-        // Also ensure we're getting PNG format for better transparency support
         val pngAvatar = avatar.replace("webp", "png")
-        // Updated API endpoint to v2 and parameter name to "image"
-        val res = Http.Request("$url$pngAvatar")
-            // Add headers to ensure proper transparency handling
-            .setHeader("Accept", "image/gif")
-            .execute()
-            
+        
+        // First request to get the JSON response with the GIF URL
+        val jsonResponse = Http.Request("$url$pngAvatar").execute().text()
+        
+        // Parse the JSON to get the actual GIF URL
+        val jsonObject = JSONObject(jsonResponse)
+        val gifUrl = jsonObject.getString("url")
+        
+        // Now fetch the actual GIF using the URL from the JSON response
+        val gifResponse = Http.Request(gifUrl).execute()
+        
         val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
-        FileOutputStream(f).use { fos -> res.pipe(fos) }
+        FileOutputStream(f).use { fos -> gifResponse.pipe(fos) }
         f.deleteOnExit()
         return f
     }
