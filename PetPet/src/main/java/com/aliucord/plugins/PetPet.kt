@@ -46,34 +46,22 @@ class PetPet : Plugin() {
             var file: File? = null
             try {
                 file = imageToDataUri(avatar, context)
-                if (file != null) {
-                    ctx.addAttachment(Uri.fromFile(file).toString(), "petpet.gif")
-                    return@registerCommand CommandResult("")
-                } else {
-                    return@registerCommand CommandResult("Failed to generate petpet image")
-                }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Main.logger.error(e)
-                return@registerCommand CommandResult("Error: ${e.message ?: "Unknown error occurred"}")
             }
+            assert(file != null)
+            ctx.addAttachment(Uri.fromFile(file).toString(), "petpet.gif")
+            CommandResult("")
         }
     }
 
-    private fun imageToDataUri(avatar: String, mContext: Context): File? {
-        val alternativeUrl = "https://nekos.best/api/v2/pat?url="
-        var file: File? = null
-        
-        try {
-            val res = Http.Request(alternativeUrl + avatar.replace("webp", "png")).execute(null)
-            file = File.createTempFile("temp", ".gif", mContext.cacheDir)
-            FileOutputStream(file).use { fos -> res.pipe(fos) }
-            file.deleteOnExit()
-        } catch (e: Exception) {
-            Main.logger.error("Exception while fetching image: ${e.message}")
-            return null
-        }
-        
-        return file
+    @Throws(Throwable::class)
+    private fun imageToDataUri(avatar: String, mContext: Context): File {
+        val res = Http.Request(url + avatar.replace("webp", "png")).execute()
+        val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
+        FileOutputStream(f).use { fos -> res.pipe(fos) }
+        f.deleteOnExit()
+        return f
     }
 
     override fun stop(context: Context) {
@@ -81,6 +69,6 @@ class PetPet : Plugin() {
     }
 
     companion object {
-        private const val url = "https://api.obamabot.me/v1/image/petpet?avatar="
+        private const val url = "https://api.obamabot.me/v2/image/petpet?avatar="
     }
 }
