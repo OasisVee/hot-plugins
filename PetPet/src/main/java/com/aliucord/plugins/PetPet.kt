@@ -57,7 +57,15 @@ class PetPet : Plugin() {
 
     @Throws(Throwable::class)
     private fun imageToDataUri(avatar: String, mContext: Context): File {
-        val res = Http.Request(url + avatar.replace("webp", "png")).execute()
+        // Update to use v2 API and change from "avatar" to "image" parameter
+        // Also ensure we're getting PNG format for better transparency support
+        val pngAvatar = avatar.replace("webp", "png")
+        // Updated API endpoint to v2 and parameter name to "image"
+        val res = Http.Request("$url$pngAvatar")
+            // Add headers to ensure proper transparency handling
+            .setHeader("Accept", "image/gif")
+            .execute()
+            
         val f = File.createTempFile("temp", ".gif", mContext.cacheDir)
         FileOutputStream(f).use { fos -> res.pipe(fos) }
         f.deleteOnExit()
@@ -69,6 +77,7 @@ class PetPet : Plugin() {
     }
 
     companion object {
-        private const val url = "https://api.obamabot.me/v2/image/petpet?avatar="
+        // Updated API endpoint to v2
+        private const val url = "https://api.obamabot.me/v2/image/petpet?image="
     }
 }
