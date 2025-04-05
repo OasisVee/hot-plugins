@@ -5,10 +5,6 @@ import android.graphics.Color
 import java.io.IOException
 import java.io.OutputStream
 
-/**
- * Class that encodes a series of images as animated GIF
- * Based on the original Java GIF encoder by Kevin Weiner
- */
 class GifEncoder {
     private var width = 0 // image size
     private var height = 0
@@ -16,8 +12,8 @@ class GifEncoder {
     private var started = false // ready to output frames
     private var out: OutputStream? = null
     private var image: Bitmap? = null // current frame
-    private val pixels: IntArray = IntArray(0) // BGR byte array from frame
-    private val indexedPixels: ByteArray = ByteArray(0) // converted frame indexed to palette
+    private var pixels: IntArray = IntArray(0) // BGR byte array from frame
+    private var indexedPixels: ByteArray = ByteArray(0) // converted frame indexed to palette
     private var colorDepth = 0 // number of bit planes
     private var colorTab: ByteArray = ByteArray(0) // RGB palette
     private var usedEntry = BooleanArray(256) // active palette entries
@@ -29,93 +25,57 @@ class GifEncoder {
     private var repeat = -1 // loop count (0 = infinite)
     private var quality = 10 // quality level (1-30)
     
-    /**
-     * Sets quality of color quantization (conversion of images to the maximum 256 colors allowed by the GIF specification).
-     * Lower values (minimum = 1) produce better colors, but slow processing significantly.
-     * 10 is the default, and produces good color mapping at reasonable speeds.
-     * Values greater than 20 do not yield significant improvements in speed.
-     */
     fun setQuality(quality: Int) {
         this.quality = quality.coerceIn(1, 30)
     }
     
-    /**
-     * Sets the GIF frame disposal code for the last added frame and any subsequent frames.
-     * Default is 0 if no transparent color has been set, otherwise 2.
-     */
     fun setDispose(code: Int) {
         if (code >= 0) dispose = code
     }
     
-    /**
-     * Sets the transparent color for the last added frame and any subsequent frames.
-     * Since all colors are subject to modification in the quantization process, the color in the final
-     * palette for each frame closest to the given color becomes the transparent color for that frame.
-     * May be set to null to indicate no transparent color.
-     */
     fun setTransparent(color: Int?) {
         transparent = color ?: Color.TRANSPARENT
     }
     
-    /**
-     * Sets the number of times the set of GIF frames should be played.
-     * Default is 1; 0 means play indefinitely.
-     * Must be invoked before the first image is added.
-     */
     fun setRepeat(repeat: Int) {
         this.repeat = repeat
     }
     
-    /**
-     * Sets frame rate in frames per second. Equivalent to setDelay(1000/fps).
-     */
     fun setFrameRate(fps: Float) {
         if (fps > 0f) delay = (1000 / fps).toInt()
     }
     
-    /**
-     * Sets the delay time between each frame in milliseconds.
-     * Default is 0.
-     */
     fun setDelay(delay: Int) {
         this.delay = delay.coerceAtLeast(0)
     }
     
-    /**
-     * Adds next GIF frame. The frame is not written immediately, but is
-     * actually deferred until the next frame is received so that timing
-     * data can be inserted. Frames need not be added in sequence, as
-     * timestamps are used to determine the sequence.
-     */
     fun addFrame(im: Bitmap): Boolean {
         if (im == null || !started) return false
         
         try {
             if (width == 0 || height == 0) {
-                // Initialize logical screen size
                 width = im.width
                 height = im.height
             }
             
             image = im
-            getImagePixels() // Convert to indexed pixel array
-            analyzePixels() // Build color table & map pixels
+            getImagePixels()
+            analyzePixels()
             
             if (firstFrame) {
-                writeLSD() // Logical screen descriptor
-                writePalette() // Global color table
+                writeLSD()
+                writePalette()
                 if (repeat >= 0) {
-                    // Use NS app extension to indicate reps
                     writeNetscapeExt()
                 }
             }
             
-            writeGraphicCtrlExt() // Write graphic control extension
-            writeImageDesc() // Image descriptor
+            writeGraphicCtrlExt()
+            writeImageDesc()
             if (!firstFrame) {
-                writePalette() // Local color table
+                writePalette()
             }
-            writePixels() // Encode and write pixel data
+            writePixels()
             
             firstFrame = false
             return true
@@ -124,16 +84,12 @@ class GifEncoder {
         }
     }
     
-    /**
-     * Flushes any pending data and closes output file.
-     * If writing to an OutputStream, the stream is not closed.
-     */
     fun finish(): Boolean {
         if (!started) return false
         
         started = false
         try {
-            out?.write(0x3B) // GIF trailer
+            out?.write(0x3B)
             out?.flush()
             if (closeStream) {
                 out?.close()
@@ -142,7 +98,6 @@ class GifEncoder {
             return false
         }
         
-        // Reset for subsequent use
         transIndex = 0
         out = null
         image = null
@@ -151,15 +106,12 @@ class GifEncoder {
         return true
     }
     
-    /**
-     * Initiates GIF file creation on the given stream.
-     */
     fun start(os: OutputStream?): Boolean {
         if (os == null) return false
         closeStream = false
         out = os
         try {
-            writeString("GIF89a") // Header
+            writeString("GIF89a")
         } catch (e: IOException) {
             return false
         }
@@ -168,23 +120,14 @@ class GifEncoder {
         return true
     }
     
-    /**
-     * Analyzes image colors and creates color map.
-     */
     private fun analyzePixels() {
         val len = pixels.size
         val nPix = len
         
-        // Create new color table with proper size
         colorTab = ByteArray(3 * 256)
         
-        // Map image colors to closest match in color table
         val indexedPixels = ByteArray(nPix)
         
-        // TODO: Implement actual quantization algorithm here
-        // For simplicity, we'll use a basic palette for now
-        
-        // Create a simple palette
         for (i in 0 until 256) {
             val r = (i shr 5) * 36
             val g = ((i shr 2) and 7) * 36
@@ -195,7 +138,6 @@ class GifEncoder {
             colorTab[i * 3 + 2] = b.toByte()
         }
         
-        // Map image pixels to palette
         var k = 0
         for (i in 0 until nPix) {
             val pixel = pixels[i]
@@ -204,14 +146,12 @@ class GifEncoder {
             val b = Color.blue(pixel)
             val a = Color.alpha(pixel)
             
-            // Check for transparency
             if (a < 128) {
-                transIndex = 0 // Use index 0 for transparency
+                transIndex = 0
                 indexedPixels[i] = 0
                 continue
             }
             
-            // Simple palette mapping - find closest color
             var minDist = Int.MAX_VALUE
             var index = 0
             
@@ -234,9 +174,6 @@ class GifEncoder {
         this.indexedPixels = indexedPixels
     }
     
-    /**
-     * Extracts image pixels into an int array.
-     */
     private fun getImagePixels() {
         val w = image!!.width
         val h = image!!.height
@@ -244,95 +181,73 @@ class GifEncoder {
         val newPixels = IntArray(w * h)
         image!!.getPixels(newPixels, 0, w, 0, 0, w, h)
         
-        // The pixels array will now be ARGB format for each pixel
         pixels = newPixels
     }
     
-    /**
-     * Writes Graphic Control Extension.
-     */
     @Throws(IOException::class)
     private fun writeGraphicCtrlExt() {
-        out!!.write(0x21) // Extension introducer
-        out!!.write(0xf9) // GCE label
-        out!!.write(4) // Data block size
+        out!!.write(0x21)
+        out!!.write(0xf9)
+        out!!.write(4)
         
-        // Packed fields
         var transp = 0
         var disp = 0
         if (transparent != Color.TRANSPARENT) {
             transp = 1
-            disp = 2 // Disposal: restore to bg color
+            disp = 2
         }
         
         if (dispose >= 0) {
-            disp = dispose and 7 // User override
+            disp = dispose and 7
         }
         
         disp = disp shl 2
         
-        out!!.write(disp or transp) // Packed fields
+        out!!.write(disp or transp)
         
-        writeShort(delay) // Delay time
-        out!!.write(transIndex) // Transparent color index
-        out!!.write(0) // Block terminator
+        writeShort(delay)
+        out!!.write(transIndex)
+        out!!.write(0)
     }
     
-    /**
-     * Writes Image Descriptor.
-     */
     @Throws(IOException::class)
     private fun writeImageDesc() {
-        out!!.write(0x2c) // Image separator
-        writeShort(0) // Image position x,y = 0,0
+        out!!.write(0x2c)
         writeShort(0)
-        writeShort(width) // Image size
-        writeShort(height)
-        
-        // Packed fields
-        if (firstFrame) {
-            // No LCT - use global color table, no interlace
-            out!!.write(0)
-        } else {
-            // Specify local color table and interlace
-            out!!.write(0x80 or palSize) // 1 local color table 1=yes
-        }
-    }
-    
-    /**
-     * Writes Logical Screen Descriptor.
-     */
-    @Throws(IOException::class)
-    private fun writeLSD() {
-        // Logical screen size
+        writeShort(0)
         writeShort(width)
         writeShort(height)
         
-        // Packed fields
-        out!!.write(0x80 or 0x70 or palSize) // Global color table flag
-        
-        out!!.write(0) // Background color index
-        out!!.write(0) // Pixel aspect ratio - 1:1
+        if (firstFrame) {
+            out!!.write(0)
+        } else {
+            out!!.write(0x80 or palSize)
+        }
     }
     
-    /**
-     * Writes Netscape application extension to define looping.
-     */
+    @Throws(IOException::class)
+    private fun writeLSD() {
+        writeShort(width)
+        writeShort(height)
+        
+        out!!.write(0x80 or 0x70 or palSize)
+        
+        out!!.write(0)
+        out!!.write(0)
+    }
+    
     @Throws(IOException::class)
     private fun writeNetscapeExt() {
-        out!!.write(0x21) // Extension introducer
-        out!!.write(0xff) // App extension label
-        out!!.write(11) // Block size
-        writeString("NETSCAPE2.0") // App id + auth code
-        out!!.write(3) // Sub-block size
-        out!!.write(1) // Loop sub-block id
-        writeShort(repeat) // Loop count (0=infinite)
-        out!!.write(0) // Block terminator
+        out!!.write(0x21)
+        out!!.write(0xff)
+        out!!.write(11)
+        writeString("NETSCAPE2.0")
+        out!!.write(3)
+        out!!.write(1)
+        writeShort(repeat)
+        out!!.write(0)
     }
     
-    /**
-     * Writes color table.
-     */
     @Throws(IOException::class)
     private fun writePalette() {
         out!!.write(colorTab, 0, colorTab.size)
@@ -342,28 +257,18 @@ class GifEncoder {
         }
     }
     
-    /**
-     * Encodes and writes pixel data.
-     * Uses simple LZW implementation for encoding.
-     */
     @Throws(IOException::class)
     private fun writePixels() {
         val encoder = LZWEncoder(width, height, indexedPixels, colorDepth)
         encoder.encode(out!!)
     }
     
-    /**
-     * Write a 16-bit value to the output stream, LSB first.
-     */
     @Throws(IOException::class)
     private fun writeShort(value: Int) {
         out!!.write(value and 0xff)
         out!!.write(value shr 8 and 0xff)
     }
     
-    /**
-     * Writes a string to the output stream.
-     */
     @Throws(IOException::class)
     private fun writeString(s: String) {
         for (i in s.indices) {
@@ -371,15 +276,12 @@ class GifEncoder {
         }
     }
     
-    // Helper inner class for LZW encoding
     private inner class LZWEncoder(private val width: Int, private val height: Int, 
                                  private val pixels: ByteArray, private val initCodeSize: Int) {
-        // Simplified LZW implementation
         @Throws(IOException::class)
         fun encode(os: OutputStream) {
-            os.write(initCodeSize) // Write minimum code size
+            os.write(initCodeSize)
             
-            // Write all pixels with simple run-length encoding
             val maxLen = 255
             var pos = 0
             
@@ -392,7 +294,7 @@ class GifEncoder {
                 pos += len
             }
             
-            os.write(0) // Write block terminator
+            os.write(0)
         }
     }
     
