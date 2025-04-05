@@ -99,7 +99,7 @@ class PetPet : Plugin() {
                 ctx.addAttachment(Uri.fromFile(gifFile).toString(), "petpet.gif")
                 return@registerCommand CommandResult("")
             } catch (e: Throwable) {
-                Main.logger.error(e)
+                Main.logger.error(e, "Failed to create petpet")
                 return@registerCommand CommandResult("Failed to create petpet: ${e.message}")
             }
         }
@@ -192,8 +192,8 @@ class PetPet : Plugin() {
             canvas.drawColor(android.graphics.Color.TRANSPARENT)
             
             val j = if (i < FRAMES / 2) i else FRAMES - i
-            val width = (0.8 + j * 0.02) * resolution
-            val height = (0.8 - j * 0.05) * resolution
+            val width = (0.8 + j * 0.02).toFloat() * resolution
+            val height = (0.8 - j * 0.05).toFloat() * resolution
             val offsetX = (1 - width / resolution) * 0.5 + 0.1
             val offsetY = 1 - height / resolution - 0.08
             
@@ -217,7 +217,7 @@ class PetPet : Plugin() {
     
     private fun CommandContext.getIntOrDefault(key: String, default: Int): Int {
         return try {
-            getInt(key)
+            getInt(key) ?: default
         } catch (e: Exception) {
             default
         }
@@ -225,7 +225,7 @@ class PetPet : Plugin() {
     
     private fun CommandContext.getBoolOrDefault(key: String, default: Boolean): Boolean {
         return try {
-            getBoolean(key)
+            getBoolean(key) ?: default
         } catch (e: Exception) {
             default
         }
