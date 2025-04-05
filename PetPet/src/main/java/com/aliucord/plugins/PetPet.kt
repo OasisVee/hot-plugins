@@ -82,7 +82,7 @@ class PetPet : Plugin() {
             arguments
         ) { ctx: CommandContext ->
             try {
-                val user = ctx.getUser("user") // Corrected function name
+                val user = ctx.getUser("user")
                 if (user == null) {
                     return@registerCommand CommandResult("You need to specify a user to pet!")
                 }
@@ -92,14 +92,14 @@ class PetPet : Plugin() {
                 val noServerPfp = ctx.getBoolOrDefault("no-server-pfp", false)
                 
                 val serverId = if (noServerPfp) null else ctx.currentChannel.guildId
-                val avatarUrl = IconUtils.getForUser(user.id, serverId.toString()).replace("?size=128", "?size=2048") // Corrected arguments
+                val avatarUrl = IconUtils.getForUser(user.id, serverId.toString()).replace("?size=128", "?size=2048")
                 
                 val gifFile = createPetpetGif(context, avatarUrl, delay, resolution)
                 
                 ctx.addAttachment(Uri.fromFile(gifFile).toString(), "petpet.gif")
                 return@registerCommand CommandResult("")
             } catch (e: Throwable) {
-                Main.logger.error(e, "Failed to create petpet")
+                Main.logger.error("Failed to create petpet", e)
                 return@registerCommand CommandResult("Failed to create petpet: ${e.message}")
             }
         }
