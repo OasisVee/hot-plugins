@@ -25,7 +25,6 @@ allprojects {
         google()
         mavenCentral()
         maven("https://maven.aliucord.com/snapshots")
-        maven("https://jitpack.io") // For Coil and other dependencies
     }
 }
 
@@ -82,17 +81,6 @@ subprojects {
         implementation("androidx.appcompat:appcompat:1.4.1")
         implementation("com.google.android.material:material:1.5.0")
         implementation("androidx.constraintlayout:constraintlayout:2.1.3")
-        
-        // Add Coil for image loading
-        implementation("io.coil-kt:coil:1.4.0")
-        
-        // Add Kotlin coroutines
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
-        
-        // Add Glide for additional image processing capabilities
-        implementation("com.github.bumptech.glide:glide:4.12.0")
-        annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
     }
 }
 
