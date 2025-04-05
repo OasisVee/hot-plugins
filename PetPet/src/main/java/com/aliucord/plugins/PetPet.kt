@@ -1,12 +1,3 @@
-/*
- * Wolf's Aliucord Plugins
- * Copyright (C) 2021 Wolfkid200444
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- */
 package com.aliucord.plugins
 
 import android.content.Context
@@ -48,7 +39,6 @@ class PetPet : Plugin() {
     private val executor = Executors.newFixedThreadPool(3)
     
     override fun start(context: Context) {
-        // Preload frames
         preloadFrames(context)
         
         val arguments = listOf(
@@ -92,22 +82,18 @@ class PetPet : Plugin() {
             arguments
         ) { ctx: CommandContext ->
             try {
-                // Check if user is provided
-                val user = ctx.getOptionalUser("user")
+                val user = ctx.getUser("user") // Corrected function name
                 if (user == null) {
                     return@registerCommand CommandResult("You need to specify a user to pet!")
                 }
                 
-                // Get command options
                 val delay = ctx.getIntOrDefault("delay", DEFAULT_DELAY)
                 val resolution = ctx.getIntOrDefault("resolution", DEFAULT_RESOLUTION)
                 val noServerPfp = ctx.getBoolOrDefault("no-server-pfp", false)
                 
-                // Get avatar URL
                 val serverId = if (noServerPfp) null else ctx.currentChannel.guildId
-                val avatarUrl = IconUtils.getForUser(user, serverId).replace("?size=128", "?size=2048")
+                val avatarUrl = IconUtils.getForUser(user.id, serverId.toString()).replace("?size=128", "?size=2048") // Corrected arguments
                 
-                // Create the petpet GIF
                 val gifFile = createPetpetGif(context, avatarUrl, delay, resolution)
                 
                 ctx.addAttachment(Uri.fromFile(gifFile).toString(), "petpet.gif")
@@ -121,12 +107,10 @@ class PetPet : Plugin() {
     
     private fun preloadFrames(context: Context) {
         try {
-            // Clear existing frames
             frameCache.clear()
             
             val latch = CountDownLatch(FRAMES)
             
-            // Load each frame in parallel
             for (i in 0 until FRAMES) {
                 executor.submit {
                     try {
@@ -153,10 +137,8 @@ class PetPet : Plugin() {
                 }
             }
             
-            // Wait for all frames to be loaded
             latch.await()
             
-            // Check if all frames were loaded
             if (frameCache.size != FRAMES) {
                 Main.logger.error("Failed to load all frames: ${frameCache.size}/$FRAMES loaded")
             }
@@ -182,7 +164,6 @@ class PetPet : Plugin() {
     }
     
     private fun createPetpetGif(context: Context, avatarUrl: String, delay: Int, resolution: Int): File {
-        // Load avatar
         val avatarBitmap = runBlocking {
             val request = ImageRequest.Builder(context)
                 .data(avatarUrl)
@@ -192,60 +173,48 @@ class PetPet : Plugin() {
             drawableToBitmap(drawable!!)
         }
         
-        // Resize avatar to resolution
         val resizedAvatar = Bitmap.createScaledBitmap(avatarBitmap, resolution, resolution, true)
         
-        // Create output file
         val outputFile = File.createTempFile("petpet", ".gif", context.cacheDir)
         outputFile.deleteOnExit()
         
-        // Create GIF encoder
         val gifEncoder = GifEncoder().apply {
             start(FileOutputStream(outputFile))
-            setRepeat(0) // loop forever
+            setRepeat(0)
             setDelay(delay)
-            setQuality(10) // best quality, lower value = better quality
+            setQuality(10)
         }
         
-        // Create canvas for drawing frames
         val frameBitmap = Bitmap.createBitmap(resolution, resolution, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(frameBitmap)
         
-        // Generate each frame
         for (i in 0 until FRAMES) {
-            // Clear canvas
             canvas.drawColor(android.graphics.Color.TRANSPARENT)
             
-            // Calculate scaling and positioning for the avatar
             val j = if (i < FRAMES / 2) i else FRAMES - i
             val width = (0.8 + j * 0.02) * resolution
             val height = (0.8 - j * 0.05) * resolution
             val offsetX = (1 - width / resolution) * 0.5 + 0.1
             val offsetY = 1 - height / resolution - 0.08
             
-            // Draw avatar with transforms
             val matrix = Matrix()
             matrix.postScale(width / resolution, height / resolution)
             matrix.postTranslate(offsetX * resolution, offsetY * resolution)
             
             canvas.drawBitmap(resizedAvatar, matrix, null)
             
-            // Draw pet frame (hand) over the avatar
             val frame = if (i < frameCache.size) frameCache[i] else frameCache[0]
             val resizedFrame = Bitmap.createScaledBitmap(frame, resolution, resolution, true)
             canvas.drawBitmap(resizedFrame, 0f, 0f, null)
             
-            // Add frame to GIF
             gifEncoder.addFrame(frameBitmap)
         }
         
-        // Finish GIF encoding
         gifEncoder.finish()
         
         return outputFile
     }
     
-    // Helper extension functions
     private fun CommandContext.getIntOrDefault(key: String, default: Int): Int {
         return try {
             getInt(key)
